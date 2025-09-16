@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Estratégico del Contralor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Lato:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Corporate Purple & White -->
+    <!-- Application Structure Plan: Se ha rediseñado el dashboard para iniciar con una sección de "Visión Estratégica" que captura la reflexión del usuario sobre la evolución del rol del contralor. Esta sección utiliza una comparación visual (Pasado vs. Futuro) para enmarcar el propósito de las herramientas interactivas que le siguen: el "Simulador de Escenarios" y el "Análisis de Palancas de Rentabilidad". Esta nueva estructura transforma el dashboard de una simple herramienta de cálculo a una narrativa sobre la transformación profesional, alineándose con un perfil de liderazgo y auditoría. -->
+    <!-- Visualization & Content Choices: 1. Evolución del Contralor (NUEVO) -> Goal: Informar/Inspirar -> Method: Comparación en dos columnas con iconos Unicode. -> Justification: Simplifica la compleja reflexión del usuario en un formato visualmente atractivo y fácil de digerir que llama la atención sobre el cambio de paradigma. 2. Simulador de Escenarios -> Goal: Explorar -> Method: Sliders y KPIs. -> Justification: Demuestra la aplicación práctica del análisis CVU. 3. Análisis de Palancas -> Goal: Estrategia -> Method: Chart.js Bar Chart. -> Justification: Visualiza inequívocamente dónde debe enfocarse la gerencia, la herramienta de mayor valor para un contralor moderno. Library: Chart.js. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        :root {
+            --bg-main: #f9fafb;
+            --bg-card: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --accent-primary: #5f27cd;
+            --accent-secondary: #c4b5fd;
+            --font-display: 'Montserrat', sans-serif;
+            --font-body: 'Lato', sans-serif;
+        }
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+        }
+        h1, h2, h3, h4 {
+            font-family: var(--font-display);
+        }
+        .main-container {
+            background: var(--bg-card);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--border-color);
+        }
+        .kpi-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .kpi-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .kpi-value {
+            font-weight: 800;
+            color: var(--text-primary);
+            font-size: 2.25rem;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+        }
+        input[type="range"] {
+            -webkit-appearance: none; appearance: none;
+            width: 100%; height: 8px;
+            background: var(--accent-secondary);
+            border-radius: 4px; outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 24px; height: 24px;
+            background: var(--accent-primary);
+            cursor: pointer; border-radius: 50%;
+            border: 4px solid var(--bg-card);
+            box-shadow: 0 4px 15px rgba(95, 39, 205, 0.3);
+            transition: transform 0.2s ease;
+        }
+        input[type="range"]:hover::-webkit-slider-thumb {
+            transform: scale(1.1);
+        }
+        .insight-box {
+            background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+            border-left: 4px solid var(--accent-primary);
+            padding: 1.5rem;
+            border-radius: 0 16px 16px 0;
+        }
+        .evolution-tab {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .evolution-tab.active {
+            background-color: var(--accent-primary);
+            color: #ffffff;
+            box-shadow: 0 4px 14px 0 rgba(95, 39, 205, 0.3);
+        }
+        .evolution-tab:not(.active) {
+            background-color: #f3f4f6;
+            color: var(--text-secondary);
+        }
+        .recommendation-card {
+            background-color: #f5f3ff;
+            border: 1px solid #ddd6fe;
+            border-top: 4px solid var(--accent-primary);
+            border-radius: 16px; 
+            padding: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .recommendation-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px -10px rgba(95, 39, 205, 0.2);
+        }
+        .fade-in-section {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .fade-in-section.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 sm:p-8 max-w-6xl">
+        <div class="main-container p-6 md:p-12">
+            
+            <header class="text-center mb-16 fade-in-section">
+                <h1 class="text-5xl md:text-6xl font-extrabold text-gray-800">De Operativo a Estratégico</h1>
+                <p class="mt-4 text-xl text-gray-500">Un dashboard interactivo para líderes financieros que construyen el futuro.</p>
+            </header>
+
+            <main class="space-y-24">
+
+                <section class="fade-in-section">
+                    <div class="max-w-4xl mx-auto text-center p-8 bg-purple-50 rounded-2xl border border-purple-200">
+                        <h2 class="text-2xl font-bold text-gray-800">Mi Visión como Líder Financiero</h2>
+                        <p class="mt-4 text-lg text-gray-700 italic">"En Ecuador, el rol del contralor debe trascender la operación. Las herramientas gerenciales son clave para anticipar riesgos y tomar decisiones de alto impacto. Hoy, un líder financiero requiere pensamiento crítico, comunicación efectiva y una visión de sostenibilidad (ASG) para traducir datos en valor real y duradero para la organización."</p>
+                    </div>
+                </section>
+
+                <section class="fade-in-section">
+                    <h2 class="text-3xl font-bold mb-8 text-gray-800 text-center">La Evolución del Rol del Contralor</h2>
+                    <div class="flex justify-center mb-6">
+                        <div class="inline-flex rounded-lg p-1 bg-gray-100 shadow-inner">
+                            <button id="tab-pasado" class="evolution-tab py-2 px-6 rounded-md font-semibold text-sm">Pasado</button>
+                            <button id="tab-futuro" class="evolution-tab py-2 px-6 rounded-md font-semibold text-sm active">Futuro</button>
+                        </div>
+                    </div>
+                    <div id="content-pasado" class="hidden">
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 max-w-3xl mx-auto">
+                            <h3 class="text-2xl font-bold text-gray-500 mb-4 text-center">El Contralor Operativo</h3>
+                            <ul class="space-y-3 text-gray-600">
+                                <li class="flex items-start"><span class="mr-3 text-xl">💾</span><div><strong>Enfoque Histórico:</strong> Centrado en registrar y reportar lo que ya sucedió.</div></li>
+                                <li class="flex items-start"><span class="mr-3 text-xl">📄</span><div><strong>Visión Técnica:</strong> Dominio de la normativa y el cumplimiento como fin principal.</div></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div id="content-futuro">
+                        <div class="bg-white border-2 border-purple-200 rounded-lg p-6 max-w-3xl mx-auto shadow-xl shadow-purple-500/10">
+                            <h3 class="text-2xl font-bold text-gray-800 mb-4 text-center">El Contralor Estratégico</h3>
+                            <ul class="space-y-3 text-gray-700">
+                                <li class="flex items-start"><span class="mr-3 text-xl">🔮</span><div><strong>Enfoque Predictivo:</strong> Utiliza datos para anticipar riesgos y oportunidades.</div></li>
+                                <li class="flex items-start"><span class="mr-3 text-xl">🚀</span><div><strong>Agente de Innovación:</strong> Lidera con pensamiento crítico y abraza la digitalización para generar valor sostenible.</div></li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="fade-in-section">
+                    <h2 class="text-3xl font-bold mb-2 text-gray-800 text-center">🎯 Simulador de Estrategias</h2>
+                    <p class="text-center text-gray-500 mb-8">Fije una meta de utilidad y descubra las vías para alcanzarla.</p>
+                    <div class="bg-purple-50 p-8 rounded-2xl border border-purple-100 grid md:grid-cols-2 gap-8 items-center">
+                        <div class="space-y-4">
+                             <label for="targetProfit" class="block font-bold text-lg text-gray-800">Mi Meta de Utilidad:</label>
+                             <input type="number" id="targetProfit" value="250000" class="w-full p-3 text-2xl font-bold rounded-lg border-2 border-purple-200 focus:ring-2 focus:ring-purple-400 outline-none">
+                        </div>
+                        <div class="space-y-4">
+                            <div class="bg-white p-4 rounded-lg shadow-sm">
+                                <p class="text-sm font-semibold text-gray-600">Opción 1: Ajustar Precio</p>
+                                <p class="text-xl font-bold text-purple-700">Nuevo Precio de Venta: <span id="newPrice"></span></p>
+                            </div>
+                             <div class="bg-white p-4 rounded-lg shadow-sm">
+                                <p class="text-sm font-semibold text-gray-600">Opción 2: Incrementar Volumen</p>
+                                <p class="text-xl font-bold text-purple-700">Nuevas Unidades a Vender: <span id="newVolume"></span></p>
+                            </div>
+                             <div class="bg-white p-4 rounded-lg shadow-sm">
+                                <p class="text-sm font-semibold text-gray-600">Opción 3: Reducir Costos</p>
+                                <p class="text-xl font-bold text-purple-700">Nuevo Costo Variable Límite: <span id="newCvu"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <section class="fade-in-section">
+                    <h2 class="text-3xl font-bold mb-6 text-gray-800 text-center">📈 Radar de Rentabilidad: Diagnóstico de Palancas Críticas</h2>
+                    <div class="grid lg:grid-cols-2 gap-8 items-center">
+                        <div class="chart-container">
+                            <canvas id="leverageChart"></canvas>
+                        </div>
+                        <div class="insight-box">
+                            <h3 class="text-xl font-bold text-gray-800 mb-3">Visión Estratégica</h3>
+                            <p id="insightText" class="text-gray-600">Pase el cursor sobre el gráfico para un análisis detallado. Este diagnóstico muestra el efecto de un cambio del +5% en cada variable. Es la herramienta clave para saber dónde enfocar los esfuerzos y mitigar riesgos.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="fade-in-section">
+                    <h2 class="text-3xl font-bold mb-8 text-gray-800 text-center">De la Visión a la Acción: Recomendaciones Estratégicas</h2>
+                    <div class="grid md:grid-cols-3 gap-8">
+                        <div class="recommendation-card">
+                            <h3 class="text-xl font-bold text-gray-800 mb-3">1. Priorizar la Estrategia de Precios</h3>
+                            <p class="text-gray-600">El análisis demuestra que el precio es la palanca más potente. Inicie una revisión para confirmar que el precio refleja el valor real que ofrecemos.</p>
+                        </div>
+                        <div class="recommendation-card">
+                            <h3 class="text-xl font-bold text-gray-800 mb-3">2. Blindar el Margen de Contribución</h3>
+                            <p class="text-gray-600">Nuestra mayor vulnerabilidad son los costos variables. Es imperativo establecer controles rigurosos y renegociar con proveedores clave.</p>
+                        </div>
+                        <div class="recommendation-card">
+                            <h3 class="text-xl font-bold text-gray-800 mb-3">3. Implementar un Monitoreo Ágil</h3>
+                            <p class="text-gray-600">Adopte un seguimiento continuo de estas palancas para tomar decisiones proactivas y fomentar una cultura financiera en la organización.</p>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const COSTOS_FIJOS = 150000;
+            const BASE_P = 85;
+            const BASE_CVU = 50;
+            const BASE_Q = 7143;
+
+            const tabPasado = document.getElementById('tab-pasado');
+            const tabFuturo = document.getElementById('tab-futuro');
+            const contentPasado = document.getElementById('content-pasado');
+            const contentFuturo = document.getElementById('content-futuro');
+            
+            const targetProfitInput = document.getElementById('targetProfit');
+            const newPriceEl = document.getElementById('newPrice');
+            const newVolumeEl = document.getElementById('newVolume');
+            const newCvuEl = document.getElementById('newCvu');
+
+            function formatCurrency(num) { return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'USD' }).format(num); }
+            function formatNumber(num) { return new Intl.NumberFormat('es-ES').format(num); }
+            
+            function updateStrategySimulator() {
+                const targetProfit = parseFloat(targetProfitInput.value) || 0;
+                
+                // Opción 1: Nuevo Precio
+                const newPrice = ((targetProfit + COSTOS_FIJOS) / BASE_Q) + BASE_CVU;
+                newPriceEl.textContent = formatCurrency(newPrice);
+
+                // Opción 2: Nuevo Volumen
+                const mcu = BASE_P - BASE_CVU;
+                const newVolume = (targetProfit + COSTOS_FIJOS) / mcu;
+                newVolumeEl.textContent = `${formatNumber(Math.ceil(newVolume))} Uds.`;
+
+                // Opción 3: Nuevo Costo Variable
+                const newCvu = BASE_P - ((targetProfit + COSTOS_FIJOS) / BASE_Q);
+                newCvuEl.textContent = formatCurrency(newCvu);
+            }
+
+            targetProfitInput.addEventListener('input', updateStrategySimulator);
+            
+            tabPasado.addEventListener('click', () => {
+                tabPasado.classList.add('active'); tabFuturo.classList.remove('active');
+                contentPasado.classList.add('hidden'); contentFuturo.classList.add('hidden');
+            });
+            tabFuturo.addEventListener('click', () => {
+                tabFuturo.classList.add('active'); tabPasado.classList.remove('active');
+                contentFuturo.classList.remove('hidden'); contentPasado.classList.add('hidden');
+            });
+
+            function calculateLeverage() {
+                const factor = 0.05;
+                const baseProfit = ((BASE_P - BASE_CVU) * BASE_Q) - COSTOS_FIJOS;
+                const impactP = ((((BASE_P * (1 + factor)) - BASE_CVU) * BASE_Q) - COSTOS_FIJOS - baseProfit) / baseProfit;
+                const impactQ = (((BASE_P - BASE_CVU) * (BASE_Q * (1 + factor))) - COSTOS_FIJOS - baseProfit) / baseProfit;
+                const impactCvu = (((BASE_P - (BASE_CVU * (1 + factor))) * BASE_Q) - COSTOS_FIJOS - baseProfit) / baseProfit;
+                return [impactP, impactQ, impactCvu];
+            }
+            
+            const leverageData = calculateLeverage();
+            const insightTextEl = document.getElementById('insightText');
+            const insights = [
+                "<strong>Precio de Venta:</strong> Nuestra palanca ofensiva más poderosa. Un pequeño aumento aquí tiene un efecto multiplicador en la utilidad.",
+                "<strong>Volumen:</strong> Es una palanca de crecimiento, pero se necesita un esfuerzo considerable en ventas para lograr el mismo impacto que con el precio.",
+                "<strong>Costo Variable:</strong> Nuestra mayor vulnerabilidad defensiva. Un aumento inesperado erosiona directamente el margen. Su control es crítico."
+            ];
+            const defaultInsight = "Pase el cursor sobre el gráfico para un análisis detallado. Este diagnóstico muestra el efecto de un cambio del +5% en cada variable.";
+
+            const ctx = document.getElementById('leverageChart').getContext('2d');
+            const leverageChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['+5% en Precio', '+5% en Volumen', '+5% en Costo Variable'],
+                    datasets: [{
+                        data: leverageData.map(d => d * 100),
+                        backgroundColor: (c) => c.raw >= 0 ? 'rgba(95, 39, 205, 0.7)' : 'rgba(220, 38, 38, 0.6)',
+                        borderColor: (c) => c.raw >= 0 ? '#5f27cd' : '#b91c1c',
+                        borderWidth: 2,
+                        borderRadius: 5,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    onHover: (event, chartElement) => {
+                        insightTextEl.innerHTML = chartElement.length ? insights[chartElement[0].index] : defaultInsight;
+                    },
+                    scales: {
+                        x: { ticks: { color: '#4b5563', callback: (v) => v + '%' }, grid: { color: '#e9ecef' }, title: { display: true, text: 'Impacto % en la Utilidad', color: '#4b5563' } },
+                        y: { ticks: { color: '#4b5563' }, grid: { display: false } }
+                    },
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` Impacto: ${c.parsed.x.toFixed(2)}%` } } }
+                }
+            });
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.fade-in-section').forEach(section => {
+                observer.observe(section);
+            });
+            
+            updateStrategySimulator();
+        });
+    </script>
+</body>
+</html>
+
+
